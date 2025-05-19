@@ -223,7 +223,7 @@ def visualize_energy(y, sr, win, step):
 # zcr_thresh: 过零率阈值（绝对阈值）
 # silence_duration: 静音持续时间（秒）
 # 语音段起止索引列表 [(start1, end1), (start2, end2), ...]
-def vad(y, sr, win, step, energy_ratio=0.1, zcr_thresh=0.3, silence_duration=0.1):
+def vad(y, sr, win, step, energy_ratio=0.02, zcr_thresh=0.3, silence_duration=0.05, min_duration=0.05):
     # 计算短时能量和过零率
     energy = short_time_energy(y, win, step)
     zcrs = short_time_zcr(y, win, step)
@@ -238,11 +238,14 @@ def vad(y, sr, win, step, energy_ratio=0.1, zcr_thresh=0.3, silence_duration=0.1
 
     # 计算静音持续需要的帧数
     silence_frames = int(silence_duration * sr / step)
+    # 计算最小语音段持续需要的帧数
+    min_frames = int(min_duration * sr / step)
 
     segments = []       # 语音段列表
     inSpeech = False    # 是否在语音段中
     start = 0           # 语音段开始索引
-    silenceCount = 0   # 静音帧计数
+    silenceCount = 0    # 静音帧计数
+    speechCount = 0     # 语音帧计数
 
     # 遍历每一帧
     for i in range(len(energy)):
@@ -251,6 +254,7 @@ def vad(y, sr, win, step, energy_ratio=0.1, zcr_thresh=0.3, silence_duration=0.1
             if energy[i] > high_thresh:
                 inSpeech = True
                 silenceCount = 0
+                speechCount = 1
                 # 往回看，使用低能量阈值和过零率来检测语音开始
                 for j in range(i-1, -1, -1):
                     if energy[j] < low_thresh and zcrs[j] < zcr_thresh:
@@ -259,19 +263,24 @@ def vad(y, sr, win, step, energy_ratio=0.1, zcr_thresh=0.3, silence_duration=0.1
                 else:
                     start = i
         else:
-            # 使用低能量阈值和过零率来检测静音帧
-            if energy[i] < low_thresh and zcrs[i] < zcr_thresh:
+            if energy[i] > low_thresh or zcrs[i] >= zcr_thresh:
+                # 仍在语音中
+                speechCount += 1
+                silenceCount = 0
+            else:
+                # 可能是静音
                 silenceCount += 1
                 # 只有当静音持续足够长时间时，才认为语音结束
                 if silenceCount >= silence_frames:
+                    # 检查语音段长度是否够长
+                    if speechCount >= min_frames:
+                        end = i - silenceCount + 1
+                        segments.append((start * step, end * step))
+                    
+                    # 重置状态
                     inSpeech = False
-                    # 结束点是静音开始的地方
-                    end = i - silenceCount + 1
-                    segments.append((start * step, end * step))
+                    speechCount = 0
                     silenceCount = 0
-            else:
-                # 重置静音计数
-                silenceCount = 0
 
     # 处理语音段到达音频末尾的情况
     if inSpeech:
