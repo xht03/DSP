@@ -13,6 +13,17 @@ def formatConvert(audio_path, audio_format):
     audio.export(audio_name + ".wav", format="wav")
 
 
+# 绘制音频波形
+def plot_waveform(y, sr):
+    plt.figure(figsize=(10, 4))
+    plt.plot(np.arange(len(y)) / sr, y)
+    plt.title('Waveform')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.grid()
+    plt.show()
+
+
 # 预加重
 def preEmphasis(x, alpha=0.97):
     return np.append(x[0], x[1:] - alpha * x[:-1])
@@ -156,6 +167,19 @@ def short_time_zcr(y, win, step):
     return np.array(zcrs)
 
 
+# 可视化短时过零率
+def visualize_zcr(y, sr, win, step):
+    zcrs = short_time_zcr(y, win, step)
+    time = np.arange(len(zcrs)) * step / sr
+    plt.figure(figsize=(10, 4))
+    plt.plot(time, zcrs)
+    plt.title('Short-Time Zero Crossing Rate')
+    plt.xlabel('Time (s)')
+    plt.ylabel('ZCR')
+    plt.grid()
+    plt.show()
+
+
 # 计算短时能量
 # y: 信号
 # win: 窗口大小（帧长）
@@ -168,6 +192,19 @@ def short_time_energy(y, win, step):
     return np.array(energy)
 
 
+# 可视化短时能量
+def visualize_energy(y, sr, win, step):
+    energy = short_time_energy(y, win, step)
+    time = np.arange(len(energy)) * step / sr
+    plt.figure(figsize=(10, 4))
+    plt.plot(time, energy)
+    plt.title('Short-Time Energy')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Energy')
+    plt.grid()
+    plt.show()
+
+
 # 基于双门限法的语音端点检测 (voice activity detection)
 # y: 输入音频信号
 # sr: 采样率
@@ -177,7 +214,16 @@ def short_time_energy(y, win, step):
 # zcr_thresh: 过零率阈值（绝对阈值）
 # silence_duration: 静音持续时间（秒）
 # 语音段起止索引列表 [(start1, end1), (start2, end2), ...]
-def vad(y, sr, win, step, energy_ratio=0.2, zcr_thresh=0.15, silence_duration=0.2):
+# 基于双门限法的语音端点检测 (voice activity detection)
+# y: 输入音频信号
+# sr: 采样率
+# win: 帧长
+# step: 帧移(ms)
+# energy_ratio: 能量阈值（相对于最大能量的比例）
+# zcr_thresh: 过零率阈值（绝对阈值）
+# silence_duration: 静音持续时间（秒）
+# 语音段起止索引列表 [(start1, end1), (start2, end2), ...]
+def vad(y, sr, win, step, energy_ratio=0.1, zcr_thresh=0.3, silence_duration=0.1):
     # 计算短时能量和过零率
     energy = short_time_energy(y, win, step)
     zcrs = short_time_zcr(y, win, step)

@@ -2,9 +2,9 @@
 # 将文件按照第一个-之后的编号分类到对应文件夹
 
 # 设置源目录(包含.dat文件的目录)
-SOURCE_DIR="/home/keats/DSP/records/21307130453-蒋瑜贤-录音/21307130453-蒋瑜贤-录音"
+SOURCE_DIR="/home/keats/DSP/myData"
 # 设置目标基础目录
-TARGET_BASE_DIR="/home/keats/DSP/Data"
+TARGET_BASE_DIR="/home/keats/DSP/myData"
 
 # 创建目标基础目录
 mkdir -p "$TARGET_BASE_DIR"
